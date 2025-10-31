@@ -21,7 +21,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "region": "eu-west-1",
         "title": "Total bank balance (sum of all accounts)"
       }
-    }
+    },
     {
       "type": "metric",
       "x": 0,
@@ -44,10 +44,4 @@ resource "aws_cloudwatch_dashboard" "main" {
   ]
 }
 DEATHSTAR
-}
-
-module "alarm" {
-  source = "./alarm_module"
-  alarm_email = var.alarm_email
-  prefix = var.student_name
 }
