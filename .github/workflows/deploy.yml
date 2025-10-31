@@ -33,5 +33,5 @@ jobs:
         working-directory: infra
 
       - name: Terraform Apply
-        run: terraform apply -var="student_name=amni002" -var="alarm_email=amalie.nr@hotmail.no"
+        run: terraform apply -auto-approve -var="student_name=amni002" -var="alarm_email=amalie.nr@hotmail.no"
         working-directory: infra
