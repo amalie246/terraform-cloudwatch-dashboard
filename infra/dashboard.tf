@@ -6,6 +6,25 @@ resource "aws_cloudwatch_dashboard" "main" {
     {
       "type": "metric",
       "x": 0,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "${var.student_name}",
+            "bank_sum"
+          ]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "eu-west-1",
+        "title": "Total bank balance (sum of all accounts)"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
       "y": 0,
       "width": 12,
       "height": 6,
@@ -25,4 +44,10 @@ resource "aws_cloudwatch_dashboard" "main" {
   ]
 }
 DEATHSTAR
+}
+
+module "alarm" {
+  source = "./alarm_module"
+  alarm_email = var.alarm_email
+  prefix = var.student_name
 }

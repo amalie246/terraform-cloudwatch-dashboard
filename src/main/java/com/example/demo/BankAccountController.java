@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.math.BigDecimal;
+
 import static java.math.BigDecimal.valueOf;
 import static java.util.Optional.ofNullable;
 
@@ -99,6 +101,14 @@ public class BankAccountController implements ApplicationListener<ApplicationRea
     public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
         Gauge.builder("account_count", theBank,
                 b -> b.values().size()).register(meterRegistry);
+        
+        // This meter type "Gauge" reports the total amount of money in the bank
+        Gauge.builder("bank_sum", theBank,
+                b -> b.values()
+                        .stream()
+                        .map(Account::getBalance)
+                        .mapToDouble(BigDecimal::doubleValue)
+                        .sum()).register(meterRegistry);
     }
 
     @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "account not found")
