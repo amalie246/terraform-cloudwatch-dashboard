@@ -13,7 +13,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "metrics": [
           [
             "${var.student_name}",
-            "bank_sum"
+            "bank_sum.value"
           ]
         ],
         "period": 300,
@@ -21,7 +21,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "region": "eu-west-1",
         "title": "Total bank balance (sum of all accounts)"
       }
-    },
+    }
     {
       "type": "metric",
       "x": 0,
