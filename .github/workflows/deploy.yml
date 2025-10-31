@@ -29,9 +29,9 @@ jobs:
         working-directory: infra
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan -input=false -var student_name=amni002 -var alarm_email=amalie.nr@hotmail.no
+        run: terraform plan -var student_name=amni002 -var alarm_email=amalie.nr@hotmail.no
         working-directory: infra
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false -var="student_name=amni002" -var="alarm_email=amalie.nr@hotmail.no" tfplan
+        run: terraform apply -var="student_name=amni002" -var="alarm_email=amalie.nr@hotmail.no"
         working-directory: infra
