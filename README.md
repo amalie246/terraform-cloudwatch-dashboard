@@ -193,17 +193,25 @@ It should look something like this:
 
 ![Alt text](img/dashboard.png  "a title")
 
+
+
+## Do not move on unless you fully understand what has been done so far 
+
+* Look at the micrometer documentation-  (https://docs.spring.io/spring-boot/reference/actuator/metrics.html)
+* Try to add more metrics to the code, also make new endpoints if you want more code to test
+* Make sure you understand the CloudWatch dashboard Syntax, at least at a high level - try to add another widget!
+
+
+
 # PART 2
 
 ## Gauge for the Bank's Total Sum
-You are now going to create a Micrometer Gauge that displays the net balance of the bank. Place it in the correct location in the code.
 
-Please note that you have to import the BigDecimal class. When you add this code.
+You are now going to create a Micrometer Gauge that displays the net balance of the bank. How much money that is in all accounts - Place it inside the `public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent)` method in BankAcountController class. 
+
+Please note that you have to import the BigDecimal class. When you add this code. Add the `import java.math.BigDecimal` line to the top of the file.
 
 ```
-import java.math.BigDecimal;
-
-```shell
 // This meter type "Gauge" reports the total amount of money in the bank
 Gauge.builder("bank_sum", theBank,
                 b -> b.values()
@@ -211,14 +219,49 @@ Gauge.builder("bank_sum", theBank,
                         .map(Account::getBalance)
                         .mapToDouble(BigDecimal::doubleValue)
                         .sum())
-        .register(meterRegistry);
+        .register(meterRegistry));
 ```
 
-
-
 ## Create a New Widget in the CloudWatch Dashboard
-Extend the Terraform code so that it displays an additional widget for the metric bank_sum.
-Hint: you will need to change the X/Y values so they do not overlap!
+
+Extend the Terraform code in the infra folder, so that it displays an additional widget for the  metric `bank_sum` you just created. 
+In the resource "aws_cloudwatch_dashboard" "main"`, in the file infra/dashboards.tf, add more code. 
+
+```
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = var.student_name
+  dashboard_body = <<DEATHSTAR
+{
+  "widgets": [
+    {
+       <<<<<< ----- INSERT ANOTHER WIDGET HERE!
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [
+            "${var.student_name}",
+            "account_count.value"
+          ]
+        ],
+        "period": 300,
+        "stat": "Maximum",
+        "region": "eu-west-1",
+        "title": "Total number of accounts"
+      }
+    }
+  ]
+}
+DEATHSTAR
+}
+```
+
+Remember to change the X/Y values so they do not overlap!
 
 ## Cloudwatch Alarm
 We will create an Alarm that is triggered if the total sum of the bank exceeds a given amount.
@@ -234,7 +277,7 @@ We will now create a Terraform module. While we work on it, it's smart to keep i
 2. In this folder, create a new Terraform file named main.tf
 
 Take not of the fact that we're following best practices, and adding a prefix that we'll use in naming resources. This way, more than one 
-instance of this module can be used in same AWS Envrionment
+instance of this module can be used in same AWS Environment
 
 ```shell
 resource "aws_cloudwatch_metric_alarm" "threshold" {
@@ -261,7 +304,6 @@ resource "aws_sns_topic_subscription" "user_updates_sqs_target" {
   protocol  = "email"
   endpoint  = var.alarm_email
 }
-
 ```
 
 ### A Little Explanation About the aws_cloudwatch_metric_alarm Resource
@@ -273,7 +315,9 @@ resource "aws_sns_topic_subscription" "user_updates_sqs_target" {
 - Notice how one `resource` refers to another in Terraform!
 - Terraform creates both an SNS Topic and an email subscription.
 
-## Create a new file in the same directory, `variables.tf`
+## Create a new file in the /infra/alarm_module directory, `variables.tf`
+
+This will be the variables available in the module, as you can see, we make a sensible _default_ for threshold, but require the user of the module of specify email and prefix
 
 ```shell
 
@@ -292,7 +336,7 @@ variable "prefix" {
 
 ```
 
-## Create a new file in the same directory, outputs.tf
+## Create a new file in /infra/alarm_module, outputs.tf
 
 ```
 output "alarm_arn" {
@@ -332,21 +376,33 @@ resource "aws_cloudwatch_dashboard" "main" {
 DASHBOARD
 }
 
-module "alarm" {
+
+module "alarm" { << ----------- THIS IS ADDED!
   source = "./alarm_module"
   alarm_email = var.alarm_email
   prefix = var.student_name
 }
 
 ```
-
 ## Finally, you must change variables.tf in the /infra folder, and add the variable. 
+
+When we run terraform frmo the *main* folder - we want the user to specify the email recipient for the alarm. 
+*do not add* add your student email in the variable like this! 
+
+```hcl
+variable "glenn.bech@gmail.com" {
+    type = string
+}
+```
+
+The *name* of the  variable is alarm_email, the *value* is your email address and will be provided as a value when terraform run. You *can* Feel free to set your own email address as the default value for this variable 
+
 ```hcl
 variable "alarm_email" {
     type = string
 }
 ```
-Because we do not want to hardcode email, or any specific values in our Terraform code. Feel free to set your own email address as the default value for this variable 
+
 
 # Run the Terraform Code from Codespaces
 
@@ -355,7 +411,6 @@ Because we do not want to hardcode email, or any specific values in our Terrafor
 ```shell
 terraform init
 terraform apply
-
 ```
 
 ## Confirm Email
@@ -382,10 +437,13 @@ curl --location --request POST 'http://localhost:8080/account' \
 }'|jq
 
 ```
-
 - Check that the alarm goes off by seeing that you have received an email.
 - Go to CloudWatch Alarms in AWS and see that the alarm's state is `IN_ALARM`.
 - Get the bank's balance back to 0, for example by creating an account with a negative balance.
 - See that the alarm's state moves away from `IN_ALARM`.
 
-DONE!
+## Create a GitHub Actions workflow 
+
+* Based on previous labs and what you have learned about Terraform state you show now be able to take this repository - and make a GitHub aciotns workflow that applies the infrastructure 
+on pushes on the main branch.
+* Configure terraform state properly using aws s3 as a backend 
